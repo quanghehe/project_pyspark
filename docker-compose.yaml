@@ -1,17 +1,20 @@
-version: '3'
+
+
 services:
   spark-master:
-    image: bitnami/spark:latest
+    image: bitnami/spark:3.3.2
     container_name: spark-master
     environment:
       - SPARK_MODE=master
       - IVY_HOME=/opt/bitnami/spark/.ivy2
     ports:
-      - "7077:7077"   
-      - "8080:8080"  
+      - "7077:7077"     # Spark master port
+      - "8080:8080"     # Spark master web UI
+    networks:
+      - data_network
 
   spark-worker-1:
-    image: bitnami/spark:latest
+    image: bitnami/spark:3.3.2
     container_name: spark-worker-1
     environment:
       - SPARK_MODE=worker
@@ -20,9 +23,11 @@ services:
       - SPARK_WORKER_CORES=1
     depends_on:
       - spark-master
+    networks:
+      - data_network
 
   spark-worker-2:
-    image: bitnami/spark:latest
+    image: bitnami/spark:3.3.2
     container_name: spark-worker-2
     environment:
       - SPARK_MODE=worker
@@ -31,3 +36,28 @@ services:
       - SPARK_WORKER_CORES=1
     depends_on:
       - spark-master
+    networks:
+      - data_network
+
+  postgres:
+    image: postgres:14
+    container_name: postgres_container
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${DB_PORT}:${DB_PORT_DOCKER}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - data_network
+
+networks:
+  data_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
